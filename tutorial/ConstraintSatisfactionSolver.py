@@ -12,7 +12,7 @@ class SuccinctCourse:
         self.course_number = course_num
         self.section_number = section_num
         self.combined = [combined]
-        self.victoria_bitstring = self.build_victoria_bitstring()
+        self.victoria_bitstring = []
 
     def build_victoria_bitstring(self):  # Earliest: 07:00. Latest: 23:00. CRN 20816. Nursing courses...
         multi_array = [[False for x in range(65)] for y in range(6)]  # 64 = 16 hours * 4 (15 min blocks)
@@ -94,9 +94,8 @@ def main():
     for course in course_list:
         if course.course_reference_number == "" or course.course_reference_number == " ":
             current_index = course_list.index(course)
-            course_list[current_index - 1].combined.append(course_list[current_index].combined)
+            course_list[current_index - 1].combined.append(course_list[current_index].combined[0])
     filtered_list = [item for item in course_list if item.course_reference_number != u""]
-    print(len(filtered_list))
     course_list = filtered_list
     for course in course_list:
         if course.course_reference_number == "21459":  # {"time_start": "08:00", "course_reference_number": "21459", "section_number": ["003"], "days": ["M", "W", "F"], "subject_code": ["BIO"], "course_number": ["201"], "time_end": "08:50"},
