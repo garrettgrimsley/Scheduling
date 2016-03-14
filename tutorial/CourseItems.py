@@ -2,7 +2,10 @@ import scrapy
 
 
 def serialize_course_reference_number(crn):
+    if len(crn) > 0:
         return str(crn[0])
+    else:
+        return ""
 
 
 def serialize_days(days):

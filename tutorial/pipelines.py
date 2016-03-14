@@ -15,11 +15,10 @@ class TutorialPipeline(object):
 
 class ConstraintSatisfactionPipeline(object):
     def process_item(self, item, spider):
-        if item["course_reference_number"]:
-                if item["time_start"] and item["time_end"]:
-                    return item
+        if item["time_start"] and item["time_end"]:
+            return item
         else:
-            raise DropItem("Missing CRN in %s" % item)
+            raise DropItem("Missing times in %s" % item)
 
 
 class ConstraintSatisfactionPipelineHasDays(object):
