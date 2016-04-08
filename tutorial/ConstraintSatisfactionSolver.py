@@ -13,9 +13,9 @@ import numba
 class SuccinctCourse(object):
     def __init__(self, crn, subject, course_num, section_num, combined):
         self.course_reference_number = crn
-        self.subject_code = subject
-        self.course_number = course_num
-        self.section_number = section_num
+        self.subject_code = subject[0]
+        self.course_number = course_num[0]
+        self.section_number = section_num[0]
         self.combined = [combined]
         self.day_time = {}
         self.victoria_bitstring = []
@@ -91,29 +91,6 @@ class SuccinctCourse(object):
             self.combined))
 
 
-def main():
-    course_list = json_to_objects("../resources/different_times.json")
-    for course in course_list:
-        if course.course_reference_number == "" or course.course_reference_number == " ":
-            current_index = course_list.index(course)
-            course_list[current_index - 1].combined.append(course_list[current_index].combined[0])
-    filtered_list = [item for item in course_list if item.course_reference_number != u""]
-    course_list = filtered_list
-    for course in course_list:
-        course.build_day_time()
-        course.victoria_bitstring = course.build_victoria_bitstring()
-    unique_timeslots = []
-    for course in course_list:
-        if course.combined not in unique_timeslots:
-            unique_timeslots.append(course.combined)
-    # cpp_declarations(course_list)
-    # print("Number on courses on number_of_courses_on("Fri", course_list))
-    # print("Number of unique timeslot configurations:", len(unique_timeslots))
-    start = timer()
-
-    brute_force_schedule_generator(course_list, 5)
-    print(timer() - start)
-
 
 def number_of_courses_on(day_of_week, course_list):
     course_count = 0
@@ -148,6 +125,11 @@ def numba_try(course_list):
                 conflicts_detected += 1
             comparisons += 1
     print("Time:", timer() - start, "Comparisons:", comparisons, "Conflicts detected", conflicts_detected)
+
+
+
+
+
 
 
 def crossover(parent1, parent2):
@@ -221,6 +203,10 @@ def genetic_algorithm(course_list, preferred_courses):
     return population[0]
 
 
+
+
+
+
 def apply_constraints(course_list):
     preferred = input(print("Input preferred courses: ")).split()
     filtered_courses = [item for item in course_list if item.course_reference_number != u""]
@@ -229,15 +215,28 @@ def apply_constraints(course_list):
 
 def brute_force_schedule_generator(course_list, schedule_length):
     lists = []
+    valid_schedules = []
     for i in range(schedule_length):
         lists.append(course_list[:10])
-    schedule_checks= 0
+    schedule_checks = 0
     for items in product(*lists):
-        if not classes_conflict(items):
-            schedule_checks += 1
-        else:
-            schedule_checks += 1
-    print("Schedule checks processed: {:,}".format(schedule_checks))
+        items_list = list(items)
+        items_list = sorted(items_list, key=lambda course: course.course_reference_number)
+        if items_list not in valid_schedules:
+            if classes_conflict(items_list) == True:  # There is a conflict
+                schedule_checks += 1
+            else:
+                valid_schedules.append(items_list)
+    for item in valid_schedules:
+        print("\n")
+        for course in item:
+            print("CRN: {}. Subject-Course#-Section# {}{}-{}. Combined {}".format(
+            course.course_reference_number, course.subject_code, course.course_number, course.section_number,
+            course.combined))
+    print("Number of invalid schedules found: {:,}".format(schedule_checks))
+    print("Number of valid schedules found: ", len(valid_schedules))
+
+
 
 
 def random_schedule_generator(course_list, schedule_length):
@@ -248,12 +247,45 @@ def random_schedule_generator(course_list, schedule_length):
 
 
 def classes_conflict(potential_schedule):
-    for one_course in potential_schedule:
-        for another_course in potential_schedule:
-            if one_course != another_course:
-                if one_course.conflict_exists(another_course):
+    for one_course in range(len(potential_schedule)):
+        for another_course in range(len(potential_schedule)):
+            if one_course != another_course: # THESE ARE NUMBERS NOW
+                if potential_schedule[one_course].conflict_exists(potential_schedule[another_course]):
                     return True
     return False
+
+
+finished = False
+
+
+def first_bt(course_list, k):  # Need K.
+    valid_schedules = []
+    for root_node in course_list:
+        bt([root_node], course_list, k, valid_schedules)
+    return valid_schedules
+
+
+def bt(schedule, course_list, k, valid_schedules):
+    if k == 0:
+        valid_schedules.append(schedule)
+        return
+    elif k > 0:
+        for item in schedule:
+            for course in course_list:
+                if item.conflict_exists(course):
+                    pass
+                else:
+                    schedule.append(course)
+                    bt(schedule, course_list, k - 1, valid_schedules)
+
+
+
+def backtrack_conflict(existing_schedule, next_additional_course):
+    for course in existing_schedule:
+        if course.conflict_exists(next_additional_course):
+            return True
+        else:
+            return existing_schedule.append(next_additional_course)
 
 
 def object_decoder(obj):
@@ -269,6 +301,31 @@ def object_decoder(obj):
 def json_to_objects(filename):
     course_file = open(filename, mode="r")
     return json.load(course_file, object_hook=object_decoder)
+
+
+def main():
+    course_list = json_to_objects("../resources/different_times.json")
+    for course in course_list:
+        if course.course_reference_number == "" or course.course_reference_number == " ":
+            current_index = course_list.index(course)
+            course_list[current_index - 1].combined.append(course_list[current_index].combined[0])
+    filtered_list = [item for item in course_list if item.course_reference_number != u""]
+    course_list = filtered_list
+    for course in course_list:
+        course.build_day_time()
+        course.victoria_bitstring = course.build_victoria_bitstring()
+    unique_timeslots = []
+    for course in course_list:
+        if course.combined not in unique_timeslots:
+            unique_timeslots.append(course.combined)
+    # cpp_declarations(course_list)
+    # print("Number on courses on number_of_courses_on("Fri", course_list))
+    # print("Number of unique timeslot configurations:", len(unique_timeslots))
+    start = timer()
+    valids = first_bt(course_list[:10], 4)
+    print(len(valids))
+    # brute_force_schedule_generator(course_list, 5)
+    print(timer() - start)
 
 
 if __name__ == "__main__":
