@@ -8,7 +8,7 @@ from math import ceil
 from random import randrange
 from itertools import product
 from copy import deepcopy
-import numba
+#import numba
 
 
 class SuccinctCourse(object):
@@ -115,7 +115,7 @@ def cpp_declarations(course_list):
         out_list.write("\n")
 
 
-@numba.jit
+'''@numba.jit
 def numba_try(course_list):
     start = timer()
     comparisons = 0
@@ -125,7 +125,7 @@ def numba_try(course_list):
             if course2.victoria_conflict_exists(course):
                 conflicts_detected += 1
             comparisons += 1
-    print("Time:", timer() - start, "Comparisons:", comparisons, "Conflicts detected", conflicts_detected)
+    print("Time:", timer() - start, "Comparisons:", comparisons, "Conflicts detected", conflicts_detected)'''
 
 
 
@@ -218,7 +218,7 @@ def brute_force_schedule_generator(course_list, schedule_length):
     lists = []
     valid_schedules = []
     for i in range(schedule_length):
-        lists.append(course_list[:10])
+        lists.append(course_list)
     schedule_checks = 0
     for items in product(*lists):
         items_list = list(items)
@@ -228,13 +228,13 @@ def brute_force_schedule_generator(course_list, schedule_length):
                 schedule_checks += 1
             else:
                 valid_schedules.append(items_list)
-    for item in valid_schedules:
+    '''for item in valid_schedules:
         print("\n")
         for course in item:
             print("CRN: {}. Subject-Course#-Section# {}{}-{}. Combined {}".format(
             course.course_reference_number, course.subject_code, course.course_number, course.section_number,
-            course.combined))
-    print("Number of invalid schedules found: {:,}".format(schedule_checks))
+            course.combined))'''
+    #print("Number of invalid schedules found: {:,}".format(schedule_checks))
     print("Number of valid schedules found: ", len(valid_schedules))
 
 
@@ -259,25 +259,31 @@ def classes_conflict(potential_schedule):
 def first_bt(course_list, k):  # Need K.
     valid_schedules = []
     for root_node in range(len(course_list)):
-        print("new node # = ", root_node)
-        bt([course_list[root_node]], course_list, k=k - 1, valid_schedules=valid_schedules)
+        #print("new node # = ", root_node)
+        bt([course_list[root_node]], course_list[root_node:], k=k - 1, valid_schedules=valid_schedules)
     return valid_schedules
 
+def print_schedule(schedule):
+    for course in schedule:
+        print(course)
+    print("------------------------------")
 
 def bt(schedule, course_list, k, valid_schedules):
     if k == 0:
-        for course in schedule:
-            print(course)
-        print(len(schedule), "\n")
+        #print(len(schedule), "\n")
         valid_schedules.append(deepcopy(schedule))
         return
-    elif k > 0:
+    elif k > 0 and len(course_list) >= k:
         for course in course_list:
-                if not backtrack_conflict(schedule, course):
-                    schedule.append(course)
-                    bt(schedule, course_list, k - 1, valid_schedules)
+            length = len(schedule)
+            if not backtrack_conflict(schedule, course):
+                schedule.append(course)
+                #print_schedule(schedule)
+                bt(schedule, course_list[course_list.index(course):], k - 1, valid_schedules)
+                schedule = schedule[:-1]
+            if length < len(schedule):
+                for i in range(len(schedule)-length):
                     schedule = schedule[:-1]
-        schedule = schedule[:-1]
 
 
 
@@ -336,11 +342,12 @@ def main():
     # print("Number on courses on number_of_courses_on("Fri", course_list))
     # print("Number of unique timeslot configurations:", len(unique_timeslots))
     start = timer()
-    valids = first_bt(course_list[:40], k=3)
+    valids = first_bt(course_list[:40], k=5)
     print(len(valids))
-    # brute_force_schedule_generator(course_list, 5)
-    print(timer() - start)
-
+    print("Backtracking took: ",timer() - start)
+    start2 = timer()
+    #brute_force_schedule_generator(course_list[:15], 5)
+    print("Brute force took: ",timer() - start2)
 
 if __name__ == "__main__":
     main()
