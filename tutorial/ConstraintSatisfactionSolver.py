@@ -214,7 +214,7 @@ def apply_constraints(course_list):
     print(preferred, "\n", filtered_courses)
 
 
-def brute_force_schedule_generator(course_list, schedule_length):
+def brute_force_schedule_generator(course_list, schedule_length, first_x):
     lists = []
     valid_schedules = []
     for i in range(schedule_length):
@@ -261,8 +261,6 @@ def first_bt(course_list, k):  # Need K.
     for root_node in range(len(course_list)):
         #print("new node # = ", root_node)
         bt([course_list[root_node]], course_list[root_node:], k=k - 1, valid_schedules=valid_schedules)
-    return valid_schedules
-
 def print_schedule(schedule):
     for course in schedule:
         print(course)
