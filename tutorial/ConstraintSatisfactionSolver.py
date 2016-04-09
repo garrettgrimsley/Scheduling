@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 from math import ceil
 from random import randrange
 from itertools import product
+from copy import deepcopy
 import numba
 
 
@@ -255,28 +256,28 @@ def classes_conflict(potential_schedule):
     return False
 
 
-finished = False
-
-
 def first_bt(course_list, k):  # Need K.
     valid_schedules = []
-    for root_node in course_list:
-        bt([root_node], course_list, k, valid_schedules)
+    for root_node in range(len(course_list)):
+        print("new node # = ", root_node)
+        bt([course_list[root_node]], course_list, k=k - 1, valid_schedules=valid_schedules)
     return valid_schedules
 
 
 def bt(schedule, course_list, k, valid_schedules):
     if k == 0:
-        valid_schedules.append(schedule)
+        for course in schedule:
+            print(course)
+        print(len(schedule), "\n")
+        valid_schedules.append(deepcopy(schedule))
         return
     elif k > 0:
-        for item in schedule:
-            for course in course_list:
-                if item.conflict_exists(course):
-                    pass
-                else:
+        for course in course_list:
+                if not backtrack_conflict(schedule, course):
                     schedule.append(course)
                     bt(schedule, course_list, k - 1, valid_schedules)
+                    schedule = schedule[:-1]
+        schedule = schedule[:-1]
 
 
 
@@ -284,8 +285,21 @@ def backtrack_conflict(existing_schedule, next_additional_course):
     for course in existing_schedule:
         if course.conflict_exists(next_additional_course):
             return True
-        else:
-            return existing_schedule.append(next_additional_course)
+    return False
+
+
+def g_backtrack(partial_schedule, course_list, k, valid_schedules, goal_schedule_length):
+    if len(partial_schedule) == goal_schedule_length:
+        valid_schedules.append(partial_schedule) # It would be a complete valid schedule at this point.
+        partial_schedule = [] # We shouldn't be emptying the partial schedule, we should be removing some from it.
+    else:
+            if backtrack_conflict(partial_schedule, course_list[k]) == False:  # Just in case...Python
+                partial_schedule.append(course_list[k])
+                k += 1
+
+
+
+
 
 
 def object_decoder(obj):
@@ -322,7 +336,7 @@ def main():
     # print("Number on courses on number_of_courses_on("Fri", course_list))
     # print("Number of unique timeslot configurations:", len(unique_timeslots))
     start = timer()
-    valids = first_bt(course_list[:10], 4)
+    valids = first_bt(course_list[:40], k=3)
     print(len(valids))
     # brute_force_schedule_generator(course_list, 5)
     print(timer() - start)
