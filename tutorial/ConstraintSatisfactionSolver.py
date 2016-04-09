@@ -148,10 +148,7 @@ def mutate(schedule, course_list):
     n = len(course_list)
     j = randrange(0, len(schedule))
     i = randrange(0, n)
-    for x in range(1000):  # Attempt to perform the mutation a maximum of 1000 times.
-        if schedule[j] != course_list[i]:
-            schedule[j] = course_list[i]
-            return schedule
+    schedule[j] = course_list[i]
     return schedule
 
 
@@ -363,8 +360,22 @@ def main():
     # cpp_declarations(course_list)
     # print("Number on courses on number_of_courses_on("Fri", course_list))
     # print("Number of unique timeslot configurations:", len(unique_timeslots))
+
+    for size_of_list in range(5, 30, 2):
+        print("===========================")
+        for size_of_schedule in range(3, 7):
+            print("Separated. Size of schedule and size of list (", size_of_list, ", ", size_of_schedule, ")")
+            created_course_list = random_schedule_generator(course_list, size_of_list)
+            start_backtrack = timer()
+            bt(created_course_list, size_of_schedule)
+
+
     start = timer()
-    valids = first_bt(course_list[:40], k=4)
+    list_slice = 10
+    k_value = 5
+    genetic_generations = 120
+
+    valids = first_bt(course_list[:list_slice], k=k_value)
     total_possible = len(valids)
     print(total_possible)
     print("Backtracking took: ",timer() - start)
@@ -374,7 +385,7 @@ def main():
     #print("Brute force took: ",timer() - start2)
     for x in range(20):
         start_time = timer()
-        schedules = genetic_non_preferred(course_list[:40], 4, 80)
+        schedules = genetic_non_preferred(course_list[:list_slice], k_value, genetic_generations)
         print(len(schedules)/float(total_possible) * 100, timer() - start_time)
 
 
