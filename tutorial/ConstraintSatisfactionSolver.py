@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 from math import ceil
 from random import randrange
 from itertools import product
+from random import shuffle
 from copy import deepcopy
 #import numba
 
@@ -135,8 +136,11 @@ def numba_try(course_list):
 
 def crossover(parent1, parent2):
     offspring = list()
-    offspring.append(parent1[:len(parent1)/2])
-    offspring.append(parent2[len(parent2) - (len(parent1) / 2) - 1:])
+    offspring += parent1[:len(parent1)/2]
+    if len(parent2) % 2 == 1:
+        offspring += parent2[len(parent2) - len(parent2)/2 - 1:]
+    else:
+        offspring += parent2[len(parent2) - len(parent2)/2:]
     return offspring
 
 
@@ -151,7 +155,7 @@ def mutate(schedule, course_list):
     return schedule
 
 
-def fitness(schedule, preferred_courses):
+def fitness_preferred(schedule, preferred_courses):
     fitness_score = 0
     for course in schedule:
         if course.subject_code + course.course_number in preferred_courses:
@@ -182,14 +186,14 @@ def generate_starting_population(course_list, preferred_courses, schedule_length
     while len(schedule_population) < population_size:
         for i in range(schedule_length):
             potential_schedule.append(course_list[randrange(len(course_list))])
-        schedule_fitness = fitness(potential_schedule, preferred_courses)
+        schedule_fitness = fitness_preferred(potential_schedule, preferred_courses)
         if not classes_conflict(potential_schedule) and schedule_fitness >= 1:
             schedule_population.append((schedule_fitness, potential_schedule))
     return schedule_population
 
 
-def genetic_algorithm(course_list, preferred_courses):
-    schedule_length = 6
+def genetic_algorithm(course_list, preferred_courses, length_schedule):
+    schedule_length = length_schedule
     population_size = 50
     population = generate_starting_population(course_list, preferred_courses, schedule_length, population_size)
     population = sorted(population)
@@ -204,6 +208,27 @@ def genetic_algorithm(course_list, preferred_courses):
     return population[0]
 
 
+def genetic_non_preferred(course_list, length_schedule, generation_cap):
+    starting_population = []
+    generations = 0
+
+    while len(starting_population) < 100:
+        sorted_schedule = sorted(random_schedule_generator(course_list, length_schedule), key=lambda course: course.course_reference_number)
+        if sorted_schedule not in starting_population:
+            starting_population.append(sorted_schedule)
+    while generations <= generation_cap:
+        shuffle(starting_population)
+        for i in range(0, len(starting_population) - len(starting_population)%2, 2):
+            offspring = crossover(starting_population[i], starting_population[i + 1])
+            offspring = mutate(offspring, course_list)
+            sorted_offspring = sorted(offspring, key=lambda course: course.course_reference_number)
+            if not classes_conflict(sorted_offspring) and sorted_offspring not in starting_population:
+                starting_population.append(sorted_offspring)
+        if generations == generation_cap:
+            starting_population = [schedule for schedule in starting_population if not classes_conflict(schedule)]
+        generations += 1
+    return starting_population
+
 
 
 
@@ -214,7 +239,7 @@ def apply_constraints(course_list):
     print(preferred, "\n", filtered_courses)
 
 
-def brute_force_schedule_generator(course_list, schedule_length, first_x):
+def brute_force_schedule_generator(course_list, schedule_length):
     lists = []
     valid_schedules = []
     for i in range(schedule_length):
@@ -222,11 +247,9 @@ def brute_force_schedule_generator(course_list, schedule_length, first_x):
     schedule_checks = 0
     for items in product(*lists):
         items_list = list(items)
-        items_list = sorted(items_list, key=lambda course: course.course_reference_number)
-        if items_list not in valid_schedules:
-            if classes_conflict(items_list) == True:  # There is a conflict
-                schedule_checks += 1
-            else:
+        if classes_conflict(items_list) == False:  # There is no conflict
+            items_list = sorted(items_list, key=lambda course: course.course_reference_number)
+            if items_list not in valid_schedules:
                 valid_schedules.append(items_list)
     '''for item in valid_schedules:
         print("\n")
@@ -238,12 +261,10 @@ def brute_force_schedule_generator(course_list, schedule_length, first_x):
     print("Number of valid schedules found: ", len(valid_schedules))
 
 
-
-
 def random_schedule_generator(course_list, schedule_length):
     random_schedule = []
     for x in range(schedule_length):
-        random_schedule.append(course_list[randrange(0, schedule_length)])
+        random_schedule.append(course_list[randrange(0, len(course_list))])
     return random_schedule
 
 
@@ -261,6 +282,9 @@ def first_bt(course_list, k):  # Need K.
     for root_node in range(len(course_list)):
         #print("new node # = ", root_node)
         bt([course_list[root_node]], course_list[root_node:], k=k - 1, valid_schedules=valid_schedules)
+    return valid_schedules
+
+
 def print_schedule(schedule):
     for course in schedule:
         print(course)
@@ -331,7 +355,7 @@ def main():
     course_list = filtered_list
     for course in course_list:
         course.build_day_time()
-        course.victoria_bitstring = course.build_victoria_bitstring()
+        #course.victoria_bitstring = course.build_victoria_bitstring()
     unique_timeslots = []
     for course in course_list:
         if course.combined not in unique_timeslots:
@@ -340,12 +364,19 @@ def main():
     # print("Number on courses on number_of_courses_on("Fri", course_list))
     # print("Number of unique timeslot configurations:", len(unique_timeslots))
     start = timer()
-    valids = first_bt(course_list[:40], k=5)
-    print(len(valids))
+    valids = first_bt(course_list[:40], k=4)
+    total_possible = len(valids)
+    print(total_possible)
     print("Backtracking took: ",timer() - start)
-    start2 = timer()
-    #brute_force_schedule_generator(course_list[:15], 5)
-    print("Brute force took: ",timer() - start2)
+    valids = []
+    #start2 = timer()
+    #brute_force_schedule_generator(course_list[:40], 5)
+    #print("Brute force took: ",timer() - start2)
+    for x in range(20):
+        start_time = timer()
+        schedules = genetic_non_preferred(course_list[:40], 4, 80)
+        print(len(schedules)/float(total_possible) * 100, timer() - start_time)
+
 
 if __name__ == "__main__":
     main()
