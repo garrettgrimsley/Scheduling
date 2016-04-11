@@ -209,7 +209,7 @@ def genetic_non_preferred(course_list, length_schedule, generation_cap):
     starting_population = []
     generations = 0
 
-    while len(starting_population) < 100:
+    while len(starting_population) < 80:
         sorted_schedule = sorted(random_schedule_generator(course_list, length_schedule), key=lambda course: course.course_reference_number)
         if sorted_schedule not in starting_population:
             starting_population.append(sorted_schedule)
@@ -255,7 +255,7 @@ def brute_force_schedule_generator(course_list, schedule_length):
             course.course_reference_number, course.subject_code, course.course_number, course.section_number,
             course.combined))'''
     #print("Number of invalid schedules found: {:,}".format(schedule_checks))
-    print("Number of valid schedules found: ", len(valid_schedules))
+    return len(valid_schedules)
 
 
 def random_schedule_generator(course_list, schedule_length):
@@ -361,13 +361,23 @@ def main():
     # print("Number on courses on number_of_courses_on("Fri", course_list))
     # print("Number of unique timeslot configurations:", len(unique_timeslots))
 
-    for size_of_list in range(5, 30, 2):
+    for size_of_list in range(7, 30, 2):
         print("===========================")
         for size_of_schedule in range(3, 7):
-            print("Separated. Size of schedule and size of list (", size_of_list, ", ", size_of_schedule, ")")
+            print("Separated. Size of schedule and size of list (", size_of_list, ",", size_of_schedule, ")")
             created_course_list = random_schedule_generator(course_list, size_of_list)
-            start_backtrack = timer()
-            bt(created_course_list, size_of_schedule)
+            backtrack_timer_start = timer()
+            bt_results = len(first_bt(created_course_list, size_of_schedule))
+            backtrack_timer_end= timer()
+            print("Backtrack:", bt_results, ",", backtrack_timer_end - backtrack_timer_start)
+            bruteforce_timer_start = timer()
+            bruteforce_results = brute_force_schedule_generator(created_course_list, size_of_schedule)
+            bruteforce_timer_end = timer()
+            print("Bruteforce:", bruteforce_results, ",", bruteforce_timer_end - bruteforce_timer_start)
+            genetic_timer_start = timer()
+            genetic_results = len(genetic_non_preferred(created_course_list, size_of_schedule, 100))
+            genetic_timer_end = timer()
+            print("Genetic:", genetic_results, ",", genetic_timer_end - genetic_timer_start)
 
 
     start = timer()
