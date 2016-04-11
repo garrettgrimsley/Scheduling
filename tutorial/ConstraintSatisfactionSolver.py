@@ -9,6 +9,7 @@ from random import randrange
 from itertools import product
 from random import shuffle
 from copy import deepcopy
+from math import factorial
 #import numba
 
 
@@ -238,16 +239,13 @@ def apply_constraints(course_list):
 
 def brute_force_schedule_generator(course_list, schedule_length):
     lists = []
-    valid_schedules = []
+    valid_schedules = 0
     for i in range(schedule_length):
         lists.append(course_list)
-    schedule_checks = 0
     for items in product(*lists):
         items_list = list(items)
         if classes_conflict(items_list) == False:  # There is no conflict
-            items_list = sorted(items_list, key=lambda course: course.course_reference_number)
-            if items_list not in valid_schedules:
-                valid_schedules.append(items_list)
+            valid_schedules += 1
     '''for item in valid_schedules:
         print("\n")
         for course in item:
@@ -255,7 +253,7 @@ def brute_force_schedule_generator(course_list, schedule_length):
             course.course_reference_number, course.subject_code, course.course_number, course.section_number,
             course.combined))'''
     #print("Number of invalid schedules found: {:,}".format(schedule_checks))
-    return len(valid_schedules)
+    return valid_schedules / factorial(schedule_length)
 
 
 def random_schedule_generator(course_list, schedule_length):
@@ -286,6 +284,7 @@ def print_schedule(schedule):
     for course in schedule:
         print(course)
     print("------------------------------")
+
 
 def bt(schedule, course_list, k, valid_schedules):
     if k == 0:
